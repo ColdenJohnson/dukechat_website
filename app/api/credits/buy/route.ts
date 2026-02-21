@@ -1,21 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth';
-import { addMockCredits, formatUsd, upsertPortalUser } from '@/lib/portal-service';
-
-const DEFAULT_MOCK_PURCHASE_USD = 4;
-
-function toPositiveUsd(value: unknown): number | null {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return null;
-  }
-
-  if (value <= 0) {
-    return null;
-  }
-
-  return value;
-}
+import { findCreditPlan } from '@/lib/plans';
+import { buyTierCredits, formatUsd, planTierToLabel, upsertPortalUser } from '@/lib/portal-service';
 
 export async function POST(request: Request) {
   const user = await getCurrentUser();
@@ -27,24 +14,36 @@ export async function POST(request: Request) {
   await upsertPortalUser(user);
 
   const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-  const requestedUsd = toPositiveUsd(body.amountUsd) ?? DEFAULT_MOCK_PURCHASE_USD;
-  const amountCents = Math.round(requestedUsd * 100);
+  const plan = findCreditPlan(body.planId);
 
-  const result = await addMockCredits(user.email, amountCents);
+  if (!plan) {
+    return NextResponse.json(
+      {
+        ok: false,
+        message: 'Invalid planId. Expected one of: pro, growth, scale.'
+      },
+      { status: 400 }
+    );
+  }
+
+  const result = await buyTierCredits(user.email, plan);
 
   return NextResponse.json({
     ok: true,
-    mode: 'mock',
-    message: `Added mock credits of ${formatUsd(amountCents)} to monthly budget.`,
-    transaction: {
-      id: result.transaction.id,
+    message: `Purchased ${plan.name} tier (${formatUsd(result.transaction.amountCents)}) and added ${formatUsd(result.transaction.creditsAddedCents)} credits.`,
+    purchase: {
+      planId: plan.id,
+      planName: plan.name,
+      planTier: planTierToLabel(result.user.currentPlan),
       amountCents: result.transaction.amountCents,
-      type: result.transaction.type,
-      note: result.transaction.note,
-      createdAt: result.transaction.createdAt.toISOString()
+      creditsAddedCents: result.transaction.creditsAddedCents,
+      transactionId: result.transaction.id
     },
     user: {
       email: result.user.email,
+      currentPlan: result.user.currentPlan,
+      availableCreditsCents: result.user.availableCreditsCents,
+      lifetimeCreditsCents: result.user.lifetimeCreditsCents,
       monthlyBudgetCents: result.user.monthlyBudgetCents,
       monthlySpentCents: result.user.monthlySpentCents
     }

@@ -1,21 +1,59 @@
 import Link from 'next/link';
 
-import { getCurrentUser } from '@/lib/auth';
 import { LogoutButton } from '@/components/logout-button';
+import { getCurrentUser } from '@/lib/auth';
 
-export async function SiteNav() {
+type SiteNavProps = {
+  marketing?: boolean;
+};
+
+export async function SiteNav({ marketing = false }: SiteNavProps) {
   const user = await getCurrentUser();
 
   return (
-    <header>
-      <strong>DukeChat Portal</strong>
-      <nav>
-        <Link href="/">Home</Link>
-        <Link href="/dashboard">Dashboard</Link>
-        <Link href="/account">Account</Link>
-        <Link href="/subscription">Subscription</Link>
-        {user ? <LogoutButton /> : <Link href="/login">Login</Link>}
+    <header className="site-header">
+      <Link href="/" className="brand-mark">
+        <span className="brand-dot" />
+        DukeChat
+      </Link>
+
+      <nav className="site-nav-links" aria-label="Primary">
+        {marketing ? (
+          <>
+            <a href="#features">Features</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#faq">FAQ</a>
+          </>
+        ) : null}
+        {user ? (
+          <>
+            <Link href="/workspace">Workspace</Link>
+            <Link href="/dashboard">Dashboard</Link>
+            <Link href="/subscription">Subscription</Link>
+            <Link href="/account">Account</Link>
+          </>
+        ) : null}
       </nav>
+
+      <div className="site-nav-actions">
+        {user ? (
+          <>
+            <Link href="/workspace" className="button button-primary">
+              Open Workspace
+            </Link>
+            <LogoutButton />
+          </>
+        ) : (
+          <>
+            <Link href="/login" className="button button-ghost">
+              Log in
+            </Link>
+            <Link href="/signup" className="button button-primary">
+              Sign up
+            </Link>
+          </>
+        )}
+      </div>
     </header>
   );
 }

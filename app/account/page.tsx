@@ -1,24 +1,33 @@
 import { SiteNav } from '@/components/nav';
 import { requireCurrentUser } from '@/lib/auth';
+import { getDashboardData, planTierToLabel, upsertPortalUser } from '@/lib/portal-service';
 
 export default async function AccountPage() {
   const user = await requireCurrentUser();
+  await upsertPortalUser(user);
+  const data = await getDashboardData(user.email);
 
   return (
-    <main>
+    <main className="app-root">
       <SiteNav />
-      <h1>Account</h1>
-      <div className="card">
+
+      <section className="page-head">
+        <p className="eyebrow">Account</p>
+        <h1>Identity and profile metadata</h1>
+        <p>Portal identity is email-first, with Descope subject retained as secondary metadata for traceability.</p>
+      </section>
+
+      <section className="card-shell">
         <p>
-          <strong>Email (primary key):</strong> {user.email}
+          <strong>Email:</strong> {user.email}
         </p>
         <p>
-          <strong>Descope sub metadata:</strong> {user.descopeSub ?? 'Not available in session'}
+          <strong>Descope sub:</strong> {user.descopeSub ?? 'Not available'}
         </p>
         <p>
-          This page is intentionally minimal and reserved for future profile/account controls.
+          <strong>Current tier:</strong> {planTierToLabel(data?.user.currentPlan)}
         </p>
-      </div>
+      </section>
     </main>
   );
 }

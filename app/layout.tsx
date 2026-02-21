@@ -7,8 +7,8 @@ import './globals.css';
 const defaultProjectId = 'P39y2AtmSiEzB6oP1cjgx2GQUE1Y';
 
 export const metadata: Metadata = {
-  title: 'DukeChat Portal',
-  description: 'Landing and user portal scaffold for usage caps + billing workflows.'
+  title: 'DukeChat | Production AI Access Portal',
+  description: 'SaaS portal for identity, subscription tiers, and LiteLLM-routed AI access.'
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

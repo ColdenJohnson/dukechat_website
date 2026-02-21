@@ -15,7 +15,7 @@ export function LogoutButton() {
   }, [router, sdk]);
 
   return (
-    <button type="button" onClick={onLogout}>
+    <button type="button" className="button button-ghost" onClick={onLogout}>
       Log out
     </button>
   );

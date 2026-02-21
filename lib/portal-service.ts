@@ -1,11 +1,31 @@
-import { prisma } from '@/lib/prisma';
+import { PlanTier } from '@prisma/client';
+
 import type { PortalSessionUser } from '@/lib/auth';
+import type { CreditPlan } from '@/lib/plans';
+import { centsFromUsd } from '@/lib/plans';
+import { prisma } from '@/lib/prisma';
 
 const DEFAULT_MONTHLY_BUDGET_CENTS = 0;
-const MAX_TRANSACTIONS_TO_SHOW = 10;
+const MAX_TRANSACTIONS_TO_SHOW = 20;
 
 export function formatUsd(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
+}
+
+export function planTierToLabel(tier: PlanTier | null | undefined): string {
+  if (!tier) {
+    return 'No active tier';
+  }
+
+  if (tier === PlanTier.PRO) {
+    return 'Pro';
+  }
+
+  if (tier === PlanTier.GROWTH) {
+    return 'Growth';
+  }
+
+  return 'Scale';
 }
 
 export async function upsertPortalUser(sessionUser: PortalSessionUser) {
@@ -16,7 +36,9 @@ export async function upsertPortalUser(sessionUser: PortalSessionUser) {
       descopeSub: sessionUser.descopeSub,
       displayName: sessionUser.displayName,
       monthlyBudgetCents: DEFAULT_MONTHLY_BUDGET_CENTS,
-      monthlySpentCents: 0
+      monthlySpentCents: 0,
+      availableCreditsCents: 0,
+      lifetimeCreditsCents: 0
     },
     update: {
       descopeSub: sessionUser.descopeSub ?? undefined,
@@ -46,18 +68,31 @@ export async function getDashboardData(email: string) {
   };
 }
 
-export async function addMockCredits(email: string, amountCents: number) {
+export async function buyTierCredits(email: string, plan: CreditPlan) {
+  const priceCents = centsFromUsd(plan.priceUsd);
+  const creditsCents = centsFromUsd(plan.includedCreditsUsd);
+
   return prisma.$transaction(async (tx) => {
     const user = await tx.portalUser.upsert({
       where: { email },
       create: {
         email,
-        monthlyBudgetCents: amountCents,
-        monthlySpentCents: 0
+        currentPlan: plan.tier,
+        monthlyBudgetCents: creditsCents,
+        monthlySpentCents: 0,
+        availableCreditsCents: creditsCents,
+        lifetimeCreditsCents: creditsCents
       },
       update: {
+        currentPlan: plan.tier,
         monthlyBudgetCents: {
-          increment: amountCents
+          increment: creditsCents
+        },
+        availableCreditsCents: {
+          increment: creditsCents
+        },
+        lifetimeCreditsCents: {
+          increment: creditsCents
         }
       }
     });
@@ -65,9 +100,11 @@ export async function addMockCredits(email: string, amountCents: number) {
     const transaction = await tx.creditTransaction.create({
       data: {
         userEmail: email,
-        amountCents,
-        type: 'MOCK_PURCHASE',
-        note: `Mock purchase of ${formatUsd(amountCents)}.`
+        amountCents: priceCents,
+        creditsAddedCents: creditsCents,
+        type: 'PLAN_PURCHASE',
+        planTier: plan.tier,
+        note: `${plan.name} tier credits purchase.`
       }
     });
 
@@ -86,7 +123,7 @@ export async function buildLiteLLMSyncPayload(email: string) {
     customer: user.email,
     monthly_budget_usd: Number((user.monthlyBudgetCents / 100).toFixed(2)),
     monthly_spent_usd: Number((user.monthlySpentCents / 100).toFixed(2)),
-    source: 'dukechat-portal-stub',
-    note: 'LiteLLM sync is not yet implemented; this payload is returned for verification only.'
+    source: 'dukechat-portal',
+    note: 'Set to real sync in next pass by wiring LiteLLM admin endpoint.'
   };
 }

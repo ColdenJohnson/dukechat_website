@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth';
-import { upsertPortalUser } from '@/lib/portal-service';
+import { planTierToLabel, upsertPortalUser } from '@/lib/portal-service';
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -18,6 +18,9 @@ export async function GET() {
       email: portalUser.email,
       descopeSub: portalUser.descopeSub,
       displayName: portalUser.displayName,
+      currentPlan: planTierToLabel(portalUser.currentPlan),
+      availableCreditsCents: portalUser.availableCreditsCents,
+      lifetimeCreditsCents: portalUser.lifetimeCreditsCents,
       monthlyBudgetCents: portalUser.monthlyBudgetCents,
       monthlySpentCents: portalUser.monthlySpentCents
     }

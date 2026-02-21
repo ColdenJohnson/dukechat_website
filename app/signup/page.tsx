@@ -5,7 +5,7 @@ import { DescopeLogin } from '@/components/descope-login';
 import { SiteNav } from '@/components/nav';
 import { getCurrentUser } from '@/lib/auth';
 
-export default async function LoginPage() {
+export default async function SignupPage() {
   const user = await getCurrentUser();
 
   if (user) {
@@ -17,16 +17,17 @@ export default async function LoginPage() {
       <SiteNav />
       <section className="auth-shell">
         <div>
-          <p className="eyebrow">Welcome back</p>
-          <h1>Log in to manage credits and run AI requests.</h1>
+          <p className="eyebrow">Create your account</p>
+          <h1>Sign up and activate your first AI credit tier.</h1>
           <p>
-            Sign in with Descope to access your protected subscription data, dashboard metrics, and AI workspace.
+            After authentication you can buy tiered credits, view subscription state, and route prompts through
+            LiteLLM.
           </p>
           <p>
-            Need an account? <Link href="/signup">Create one here</Link>.
+            Already have an account? <Link href="/login">Log in</Link>.
           </p>
         </div>
-        <DescopeLogin redirectTo="/dashboard" />
+        <DescopeLogin redirectTo="/subscription" />
       </section>
     </main>
   );

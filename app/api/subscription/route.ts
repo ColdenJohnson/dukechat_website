@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth';
-import { getDashboardData, upsertPortalUser } from '@/lib/portal-service';
+import { CREDIT_PLANS } from '@/lib/plans';
+import { getDashboardData, planTierToLabel, upsertPortalUser } from '@/lib/portal-service';
 
 export async function GET() {
   const user = await getCurrentUser();
@@ -16,12 +17,18 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     subscription: {
-      status: 'placeholder',
-      planName: 'None (billing not implemented)',
+      status: 'active',
+      currentPlan: planTierToLabel(dashboard?.user.currentPlan),
+      availableCreditsCents: dashboard?.user.availableCreditsCents ?? 0,
+      lifetimeCreditsCents: dashboard?.user.lifetimeCreditsCents ?? 0,
       monthlyBudgetCents: dashboard?.user.monthlyBudgetCents ?? 0,
       monthlySpentCents: dashboard?.user.monthlySpentCents ?? 0,
-      portalKey: user.email,
-      billingImplementation: 'pending'
+      purchaseOptions: CREDIT_PLANS.map((plan) => ({
+        id: plan.id,
+        name: plan.name,
+        priceUsd: plan.priceUsd,
+        includedCreditsUsd: plan.includedCreditsUsd
+      }))
     }
   });
 }

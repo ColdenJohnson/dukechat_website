@@ -1,135 +1,111 @@
-npm install
-cp .env.local .env
-npm run db:generate
-npm run db:migrate -- --name init
-npm run dev -- --port 3001
+# DukeChat Portal
 
+Production-oriented Next.js portal for:
 
+- Landing + SaaS-style funnel
+- Descope auth (login/signup)
+- Tiered credit purchases (`$10`, `$50`, `$100`)
+- Neon/Postgres persistence with Prisma
+- Authenticated LiteLLM AI routing from a protected workspace
 
+## Implemented product flow
 
+1. User lands on `/` and sees marketing + tier cards.
+2. User logs in/signs up via Descope.
+3. User buys one of three fixed tiers from landing or `/subscription`.
+4. Purchase is written to Postgres (`portal_users` + `credit_transactions`).
+5. User opens `/workspace` and sends prompts routed through LiteLLM with identity headers.
 
+## Core routes
 
+Public pages:
 
+- `/`
+- `/login`
+- `/signup`
 
+Protected pages:
 
+- `/dashboard`
+- `/subscription`
+- `/account`
+- `/workspace`
 
+API endpoints:
 
-
-# DukeChat Portal (Vercel + Next.js)
-
-Minimal portal scaffold for the DukeChat SaaS flow:
-
-- **OpenWebUI** handles chat UI.
-- **LiteLLM Proxy** will enforce usage and budget limits.
-- This repo is the **portal app** for end users.
-- **Email is the primary identity key**.
-- `descope_sub` is stored as secondary metadata.
-
-## What is implemented now
-
-- Next.js App Router scaffold for Vercel deployment.
-- Descope auth wired end-to-end for login + protected pages.
-- Prisma/Postgres real data layer (designed for Neon).
-- End-user pages:
-  - `/` landing
-  - `/login` (Descope)
-  - `/dashboard` (protected)
-  - `/account` (protected)
-  - `/subscription` (protected placeholder)
-- API route stubs:
-  - `GET /api/me`
-  - `GET /api/dashboard`
-  - `GET /api/subscription`
-  - `POST /api/credits/buy` (mock credit purchase, no payment integration)
-  - `POST /api/budget/sync` (stub payload + `lib/litellm.ts` sync boundary for future LiteLLM admin sync)
-
-## What is intentionally not implemented yet
-
-- Real payment processing / subscription billing.
-- Outbound LiteLLM admin API calls.
-- Background jobs/webhook processing.
+- `GET /api/plans` (public)
+- `GET /api/me` (protected)
+- `GET /api/dashboard` (protected)
+- `GET /api/subscription` (protected)
+- `POST /api/credits/buy` (protected, accepts `planId` only)
+- `POST /api/budget/sync` (protected, LiteLLM budget sync boundary)
+- `GET /api/ai/models` (protected)
+- `POST /api/ai/chat` (protected)
 
 ## Tech stack
 
-- Next.js 15 (App Router)
-- React 19
+- Next.js App Router
 - Descope Next.js SDK
 - Prisma ORM
-- Postgres (Neon-ready)
+- Neon Postgres
+- LiteLLM Proxy (model routing)
 
 ## Environment variables
 
-Copy `.env.example` to `.env.local` and set values.
+Copy `.env.example` to `.env.local`, then copy to `.env` for Prisma CLI.
 
 ```bash
 cp .env.example .env.local
-```
-
-Prisma CLI reads `.env` by default, so also copy DB vars into `.env` for local Prisma commands:
-
-```bash
 cp .env.local .env
 ```
 
-Required for this scaffold:
+Required:
 
 - `NEXT_PUBLIC_DESCOPE_PROJECT_ID`
-- `POSTGRES_PRISMA_URL` (pooled Neon connection; used by Prisma client/runtime)
-- `POSTGRES_URL_NON_POOLING` (direct Neon connection; used by Prisma migrations)
+- `NEXT_PUBLIC_DESCOPE_FLOW_ID`
+- `POSTGRES_PRISMA_URL`
+- `POSTGRES_URL_NON_POOLING`
+- `LITELLM_PROXY_URL`
+- `LITELLM_API_KEY`
 
-Optional (future LiteLLM sync work):
+Optional:
 
 - `LITELLM_ADMIN_URL`
 - `LITELLM_MASTER_KEY`
+- `NEXT_PUBLIC_OPENWEBUI_URL`
 
 ## Local setup
 
-1. Install dependencies:
-
 ```bash
 npm install
-```
-
-2. Generate Prisma client:
-
-```bash
+cp .env.local .env
 npm run db:generate
+npm run db:deploy
+npm run dev -- --port 3001
 ```
 
-3. Create database schema:
+Then test:
 
-```bash
-npm run db:migrate -- --name init
-```
+- `http://localhost:3001`
+- `http://localhost:3001/login`
+- `http://localhost:3001/subscription`
+- `http://localhost:3001/workspace`
 
-If you use Neon + Vercel integration, these variables map directly to what Neon/Vercel provide.
-
-4. Start dev server:
-
-```bash
-npm run dev
-```
-
-## Database model summary
+## Database schema highlights
 
 - `portal_users`
-  - `email` (**primary key**)
-  - `descope_sub` (nullable metadata)
-  - `display_name`
+  - `email` (primary key)
+  - `descope_sub`
+  - `current_plan`
+  - `available_credits_cents`
+  - `lifetime_credits_cents`
   - `monthly_budget_cents`
   - `monthly_spent_cents`
 - `credit_transactions`
-  - mock ledger entries for budget top-ups in this scaffold
+  - typed transaction history including `plan_tier` and `credits_added_cents`
 
-## Notes on identity
+## Notes
 
-- Portal auth is Descope-based.
-- Session extraction expects an email claim and treats it as canonical user ID.
-- If email is missing from token/session claims, protected routes cannot resolve a portal user.
-
-## Recommended next implementation pass
-
-1. Wire `POST /api/budget/sync` to LiteLLM admin API using secure server-side key handling.
-2. Add admin controls for monthly caps.
-3. Add real payment provider integration and webhook ingestion.
-4. Add monthly spend ingestion from LiteLLM usage into `monthly_spent_cents`.
+- Credits are currently "top-up style" and immediately applied to stored balances.
+- Payment processor checkout/webhook integration is intentionally not added in this pass.
+- Rotate credentials if secrets have ever been pasted to logs/chat.
