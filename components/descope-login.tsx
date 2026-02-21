@@ -1,12 +1,8 @@
 'use client';
 
-import dynamic from 'next/dynamic';
+import { Descope } from '@descope/nextjs-sdk';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-
-const Descope = dynamic(() => import('@descope/nextjs-sdk').then((mod) => mod.Descope as any), {
-  ssr: false
-});
 
 export function DescopeLogin() {
   const router = useRouter();

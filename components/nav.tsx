@@ -1,14 +1,7 @@
 import Link from 'next/link';
 
 import { getCurrentUser } from '@/lib/auth';
-
-function LogoutButton() {
-  return (
-    <form action="/api/logout" method="post">
-      <button type="submit">Log out</button>
-    </form>
-  );
-}
+import { LogoutButton } from '@/components/logout-button';
 
 export async function SiteNav() {
   const user = await getCurrentUser();

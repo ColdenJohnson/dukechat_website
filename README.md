@@ -42,7 +42,6 @@ Minimal portal scaffold for the DukeChat SaaS flow:
   - `GET /api/subscription`
   - `POST /api/credits/buy` (mock credit purchase, no payment integration)
   - `POST /api/budget/sync` (stub payload + `lib/litellm.ts` sync boundary for future LiteLLM admin sync)
-  - `POST /api/logout`
 
 ## What is intentionally not implemented yet
 
