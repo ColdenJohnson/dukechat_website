@@ -1,0 +1,41 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+model PortalUser {
+  email               String              @id
+  descopeSub          String?             @map("descope_sub")
+  displayName         String?             @map("display_name")
+  monthlyBudgetCents  Int                 @default(0) @map("monthly_budget_cents")
+  monthlySpentCents   Int                 @default(0) @map("monthly_spent_cents")
+  createdAt           DateTime            @default(now()) @map("created_at")
+  updatedAt           DateTime            @updatedAt @map("updated_at")
+  creditTransactions  CreditTransaction[]
+
+  @@map("portal_users")
+}
+
+model CreditTransaction {
+  id         String                @id @default(cuid())
+  userEmail  String                @map("user_email")
+  amountCents Int                  @map("amount_cents")
+  type       CreditTransactionType
+  note       String?
+  createdAt  DateTime              @default(now()) @map("created_at")
+
+  user PortalUser @relation(fields: [userEmail], references: [email], onDelete: Cascade)
+
+  @@index([userEmail])
+  @@map("credit_transactions")
+}
+
+enum CreditTransactionType {
+  MOCK_PURCHASE
+  ADJUSTMENT
+}
