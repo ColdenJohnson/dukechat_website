@@ -12,7 +12,7 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@descope/nextjs-sdk": "^1.8.7",
+    "@descope/nextjs-sdk": "^0.14.15",
     "@prisma/client": "^6.4.1",
     "next": "^15.1.7",
     "react": "^19.0.0",
