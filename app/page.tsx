@@ -41,6 +41,11 @@ export default async function LandingPage() {
             </>
           )}
         </div>
+        {user ? (
+          <p>
+            Signed in as <strong>{user.email}</strong>
+          </p>
+        ) : null}
 
         <div className="hero-stats">
           <article>

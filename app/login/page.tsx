@@ -9,7 +9,7 @@ export default async function LoginPage() {
   const user = await getCurrentUser();
 
   if (user) {
-    redirect('/dashboard');
+    redirect('/');
   }
 
   return (
@@ -26,7 +26,7 @@ export default async function LoginPage() {
             Need an account? <Link href="/signup">Create one here</Link>.
           </p>
         </div>
-        <DescopeLogin redirectTo="/dashboard" />
+        <DescopeLogin redirectTo="/" />
       </section>
     </main>
   );
