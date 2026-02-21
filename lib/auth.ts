@@ -2,7 +2,6 @@ import { session } from '@descope/nextjs-sdk/server';
 import { redirect } from 'next/navigation';
 
 type UnknownRecord = Record<string, unknown>;
-const defaultProjectId = 'P39y2AtmSiEzB6oP1cjgx2GQUE1Y';
 
 export type PortalSessionUser = {
   email: string;
@@ -80,7 +79,7 @@ function extractUser(authInfo: unknown): PortalSessionUser | null {
 export async function getCurrentUser(): Promise<PortalSessionUser | null> {
   try {
     const authInfo = await session({
-      projectId: process.env.NEXT_PUBLIC_DESCOPE_PROJECT_ID ?? defaultProjectId
+      projectId: process.env.NEXT_PUBLIC_DESCOPE_PROJECT_ID
     });
     return extractUser(authInfo);
   } catch {
