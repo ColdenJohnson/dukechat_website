@@ -1,3 +1,20 @@
+npm install
+cp .env.local .env
+npm run db:generate
+npm run db:migrate -- --name init
+npm run dev -- --port 3001
+
+
+
+
+
+
+
+
+
+
+
+
 # DukeChat Portal (Vercel + Next.js)
 
 Minimal portal scaffold for the DukeChat SaaS flow:
@@ -47,6 +64,12 @@ Copy `.env.example` to `.env.local` and set values.
 
 ```bash
 cp .env.example .env.local
+```
+
+Prisma CLI reads `.env` by default, so also copy DB vars into `.env` for local Prisma commands:
+
+```bash
+cp .env.local .env
 ```
 
 Required for this scaffold:
