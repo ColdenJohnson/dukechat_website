@@ -121,7 +121,7 @@ export default async function LandingPage() {
         <p>Sign up, pick a tier, and route prompts through your authenticated workspace.</p>
         <div className="hero-actions">
           {user ? (
-            <Link href="/workspace" className="button button-primary">
+            <Link href="http://67.159.73.73:3000/" className="button button-primary"> 
               Continue to Workspace
             </Link>
           ) : (
@@ -134,3 +134,4 @@ export default async function LandingPage() {
     </main>
   );
 }
+// http://67.159.73.73:3000/oauth/oidc/login

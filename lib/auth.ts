@@ -2,8 +2,6 @@ import { session } from '@descope/nextjs-sdk/server';
 import { redirect } from 'next/navigation';
 
 type UnknownRecord = Record<string, unknown>;
-// const defaultProjectId = 'P39y2AtmSiEzB6oP1cjgx2GQUE1Y'; // This is NEEDED for it to work in Vercel: otherwise it will break
-// TODO: Instead, set in vercel dashboard env vars
 
 
 export type PortalSessionUser = {

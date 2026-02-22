@@ -109,3 +109,7 @@ Then test:
 - Credits are currently "top-up style" and immediately applied to stored balances.
 - Payment processor checkout/webhook integration is intentionally not added in this pass.
 - Rotate credentials if secrets have ever been pasted to logs/chat.
+
+// Note: If there are issues with env variables on vercel deployment but not in local dev, ensure that the env variable is put in vercel
+
+TODO: Should let user log in with just 1 click between applications https://docs.descope.com/identity-federation/applications/oidc-apps?utm_source=chatgpt.com
