@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth';
-import { syncBudgetToLiteLLM } from '@/lib/litellm';
-import { buildLiteLLMSyncPayload, upsertPortalUser } from '@/lib/portal-service';
+import { getUserUsage, isLiteLLMConfigError, syncUserCreditLimit } from '@/lib/litellm';
+import { getUserCreditLimitUsd, upsertPortalUser } from '@/lib/portal-service';
 
 export async function POST() {
   const user = await getCurrentUser();
@@ -12,9 +12,9 @@ export async function POST() {
   }
 
   await upsertPortalUser(user);
-  const payload = await buildLiteLLMSyncPayload(user.email);
+  const creditLimitUsd = await getUserCreditLimitUsd(user.email);
 
-  if (!payload) {
+  if (creditLimitUsd == null) {
     return NextResponse.json(
       {
         ok: false,
@@ -24,11 +24,19 @@ export async function POST() {
     );
   }
 
-  const syncResult = await syncBudgetToLiteLLM(payload);
+  try {
+    const syncResult = await syncUserCreditLimit(user.email, creditLimitUsd);
+    const usage = await getUserUsage(user.email).catch(() => null);
 
-  return NextResponse.json({
-    ok: true,
-    message: 'LiteLLM sync boundary is scaffolded; outbound sync is currently a stub.',
-    syncResult
-  });
+    return NextResponse.json({
+      ok: true,
+      message: 'LiteLLM budget and customer mapping synced.',
+      syncResult,
+      usage
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'LiteLLM sync failed.';
+    const status = isLiteLLMConfigError(error) ? 500 : 502;
+    return NextResponse.json({ ok: false, message }, { status });
+  }
 }

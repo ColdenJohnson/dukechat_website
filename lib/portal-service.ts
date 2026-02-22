@@ -1,6 +1,7 @@
 import { PlanTier } from '@prisma/client';
 
 import type { PortalSessionUser } from '@/lib/auth';
+import { normalizeEmail } from '@/lib/email';
 import type { CreditPlan } from '@/lib/plans';
 import { centsFromUsd } from '@/lib/plans';
 import { prisma } from '@/lib/prisma';
@@ -29,10 +30,12 @@ export function planTierToLabel(tier: PlanTier | null | undefined): string {
 }
 
 export async function upsertPortalUser(sessionUser: PortalSessionUser) {
+  const email = normalizeEmail(sessionUser.email);
+
   return prisma.portalUser.upsert({
-    where: { email: sessionUser.email },
+    where: { email },
     create: {
-      email: sessionUser.email,
+      email,
       descopeSub: sessionUser.descopeSub,
       displayName: sessionUser.displayName,
       monthlyBudgetCents: DEFAULT_MONTHLY_BUDGET_CENTS,
@@ -48,8 +51,10 @@ export async function upsertPortalUser(sessionUser: PortalSessionUser) {
 }
 
 export async function getDashboardData(email: string) {
+  const normalizedEmail = normalizeEmail(email);
+
   const user = await prisma.portalUser.findUnique({
-    where: { email },
+    where: { email: normalizedEmail },
     include: {
       creditTransactions: {
         orderBy: { createdAt: 'desc' },
@@ -69,14 +74,15 @@ export async function getDashboardData(email: string) {
 }
 
 export async function buyTierCredits(email: string, plan: CreditPlan) {
+  const normalizedEmail = normalizeEmail(email);
   const priceCents = centsFromUsd(plan.priceUsd);
   const creditsCents = centsFromUsd(plan.includedCreditsUsd);
 
   return prisma.$transaction(async (tx) => {
     const user = await tx.portalUser.upsert({
-      where: { email },
+      where: { email: normalizedEmail },
       create: {
-        email,
+        email: normalizedEmail,
         currentPlan: plan.tier,
         monthlyBudgetCents: creditsCents,
         monthlySpentCents: 0,
@@ -99,7 +105,7 @@ export async function buyTierCredits(email: string, plan: CreditPlan) {
 
     const transaction = await tx.creditTransaction.create({
       data: {
-        userEmail: email,
+        userEmail: normalizedEmail,
         amountCents: priceCents,
         creditsAddedCents: creditsCents,
         type: 'PLAN_PURCHASE',
@@ -112,18 +118,13 @@ export async function buyTierCredits(email: string, plan: CreditPlan) {
   });
 }
 
-export async function buildLiteLLMSyncPayload(email: string) {
-  const user = await prisma.portalUser.findUnique({ where: { email } });
+export async function getUserCreditLimitUsd(email: string): Promise<number | null> {
+  const normalizedEmail = normalizeEmail(email);
+  const user = await prisma.portalUser.findUnique({ where: { email: normalizedEmail } });
 
   if (!user) {
     return null;
   }
 
-  return {
-    customer: user.email,
-    monthly_budget_usd: Number((user.monthlyBudgetCents / 100).toFixed(2)),
-    monthly_spent_usd: Number((user.monthlySpentCents / 100).toFixed(2)),
-    source: 'dukechat-portal',
-    note: 'Set to real sync in next pass by wiring LiteLLM admin endpoint.'
-  };
+  return Number((user.monthlyBudgetCents / 100).toFixed(2));
 }

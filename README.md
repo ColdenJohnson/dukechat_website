@@ -14,7 +14,8 @@ Production-oriented Next.js portal for:
 2. User logs in/signs up via Descope.
 3. User buys one of three fixed tiers from landing or `/subscription`.
 4. Purchase is written to Postgres (`portal_users` + `credit_transactions`).
-5. User opens `/workspace` and sends prompts routed through LiteLLM with identity headers.
+5. Portal syncs the user’s cumulative credit limit to LiteLLM admin APIs (`/budget/*` + `/customer/*`).
+6. User opens `/workspace` and sends prompts routed through LiteLLM with identity headers.
 
 ## Core routes
 
@@ -38,7 +39,7 @@ API endpoints:
 - `GET /api/dashboard` (protected)
 - `GET /api/subscription` (protected)
 - `POST /api/credits/buy` (protected, accepts `planId` only)
-- `POST /api/budget/sync` (protected, LiteLLM budget sync boundary)
+- `POST /api/budget/sync` (protected, re-sync cumulative portal budget to LiteLLM)
 - `GET /api/ai/models` (protected)
 - `POST /api/ai/chat` (protected)
 
@@ -62,16 +63,15 @@ cp .env.local .env
 Required:
 
 - `NEXT_PUBLIC_DESCOPE_PROJECT_ID`
-- `NEXT_PUBLIC_DESCOPE_FLOW_ID`
 - `POSTGRES_PRISMA_URL`
 - `POSTGRES_URL_NON_POOLING`
 - `LITELLM_PROXY_URL`
 - `LITELLM_API_KEY`
+- `LITELLM_ADMIN_URL`
+- `LITELLM_MASTER_KEY`
 
 Optional:
 
-- `LITELLM_ADMIN_URL`
-- `LITELLM_MASTER_KEY`
 - `NEXT_PUBLIC_OPENWEBUI_URL`
 
 ## Local setup
@@ -106,10 +106,8 @@ Then test:
 
 ## Notes
 
-- Credits are currently "top-up style" and immediately applied to stored balances.
+- Email identity is normalized as `trim().toLowerCase()` before DB/LiteLLM operations.
+- Credits are top-up style and cumulative in portal DB (`monthly_budget_cents` currently represents total purchased limit).
+- LiteLLM remains source of truth for spend (`/customer/info`), while portal DB is source of truth for purchased credit limit.
 - Payment processor checkout/webhook integration is intentionally not added in this pass.
 - Rotate credentials if secrets have ever been pasted to logs/chat.
-
-// Note: If there are issues with env variables on vercel deployment but not in local dev, ensure that the env variable is put in vercel
-
-TODO: Should let user log in with just 1 click between applications https://docs.descope.com/identity-federation/applications/oidc-apps?utm_source=chatgpt.com

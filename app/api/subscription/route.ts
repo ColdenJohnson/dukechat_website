@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth';
+import { getUserUsage } from '@/lib/litellm';
 import { CREDIT_PLANS } from '@/lib/plans';
 import { getDashboardData, planTierToLabel, upsertPortalUser } from '@/lib/portal-service';
 
@@ -13,6 +14,7 @@ export async function GET() {
 
   await upsertPortalUser(user);
   const dashboard = await getDashboardData(user.email);
+  const usage = await getUserUsage(user.email).catch(() => null);
 
   return NextResponse.json({
     ok: true,
@@ -29,6 +31,7 @@ export async function GET() {
         priceUsd: plan.priceUsd,
         includedCreditsUsd: plan.includedCreditsUsd
       }))
-    }
+    },
+    litellmUsage: usage
   });
 }

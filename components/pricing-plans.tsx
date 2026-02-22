@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 import type { CreditPlan } from '@/lib/plans';
@@ -35,6 +36,7 @@ async function buyPlan(planId: string) {
 }
 
 export function PricingPlans({ plans, isAuthenticated, compact = false }: PricingPlansProps) {
+  const router = useRouter();
   const [busyPlanId, setBusyPlanId] = useState<string | null>(null);
   const [purchaseState, setPurchaseState] = useState<PurchaseState>(null);
 
@@ -47,6 +49,7 @@ export function PricingPlans({ plans, isAuthenticated, compact = false }: Pricin
     try {
       const message = await buyPlan(planId);
       setPurchaseState({ ok: true, message });
+      router.refresh();
     } catch (error) {
       setPurchaseState({
         ok: false,

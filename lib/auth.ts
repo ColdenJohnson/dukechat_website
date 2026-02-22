@@ -1,6 +1,8 @@
 import { session } from '@descope/nextjs-sdk/server';
 import { redirect } from 'next/navigation';
 
+import { normalizeEmail } from '@/lib/email';
+
 type UnknownRecord = Record<string, unknown>;
 
 
@@ -27,12 +29,8 @@ function readString(record: UnknownRecord | null, key: string): string | null {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : null;
 }
 
-function normalizeEmail(value: string | null): string | null {
-  if (!value) {
-    return null;
-  }
-
-  return value.toLowerCase();
+function normalizeEmailOrNull(value: string | null): string | null {
+  return value ? normalizeEmail(value) : null;
 }
 
 function extractUser(authInfo: unknown): PortalSessionUser | null {
@@ -49,10 +47,10 @@ function extractUser(authInfo: unknown): PortalSessionUser | null {
 
   for (const candidate of candidates) {
     const email =
-      normalizeEmail(readString(candidate, 'email')) ??
-      normalizeEmail(readString(candidate, 'preferred_username')) ??
-      normalizeEmail(readString(candidate, 'upn')) ??
-      normalizeEmail(readString(candidate, 'loginId'));
+      normalizeEmailOrNull(readString(candidate, 'email')) ??
+      normalizeEmailOrNull(readString(candidate, 'preferred_username')) ??
+      normalizeEmailOrNull(readString(candidate, 'upn')) ??
+      normalizeEmailOrNull(readString(candidate, 'loginId'));
 
     if (!email) {
       continue;

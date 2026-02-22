@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { getCurrentUser } from '@/lib/auth';
+import { getUserUsage } from '@/lib/litellm';
 import { getDashboardData, planTierToLabel, upsertPortalUser } from '@/lib/portal-service';
 
 export async function GET() {
@@ -12,6 +13,7 @@ export async function GET() {
 
   await upsertPortalUser(user);
   const data = await getDashboardData(user.email);
+  const usage = await getUserUsage(user.email).catch(() => null);
 
   return NextResponse.json({
     ok: true,
@@ -31,7 +33,8 @@ export async function GET() {
         type: transaction.type,
         note: transaction.note,
         createdAt: transaction.createdAt.toISOString()
-      }))
+      })),
+      litellmUsage: usage
     }
   });
 }

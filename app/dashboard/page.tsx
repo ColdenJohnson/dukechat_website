@@ -2,14 +2,20 @@ import Link from 'next/link';
 
 import { SiteNav } from '@/components/nav';
 import { requireCurrentUser } from '@/lib/auth';
+import { getUserUsage } from '@/lib/litellm';
 import { formatUsd, getDashboardData, planTierToLabel, upsertPortalUser } from '@/lib/portal-service';
 
 export default async function DashboardPage() {
   const sessionUser = await requireCurrentUser();
   await upsertPortalUser(sessionUser);
   const data = await getDashboardData(sessionUser.email);
+  const usage = await getUserUsage(sessionUser.email).catch(() => null);
 
   const user = data?.user;
+  const creditLimitCents =
+    usage?.creditLimitUsd == null ? (user?.monthlyBudgetCents ?? 0) : Math.round(usage.creditLimitUsd * 100);
+  const spentCents = usage?.usageUsd == null ? (user?.monthlySpentCents ?? 0) : Math.round(usage.usageUsd * 100);
+  const remainingCents = usage?.remainingUsd == null ? (data?.remainingCents ?? 0) : Math.round(usage.remainingUsd * 100);
 
   return (
     <main className="app-root">
@@ -34,12 +40,16 @@ export default async function DashboardPage() {
           <p>{formatUsd(user?.availableCreditsCents ?? 0)}</p>
         </article>
         <article className="metric-card">
-          <h3>Monthly budget</h3>
-          <p>{formatUsd(user?.monthlyBudgetCents ?? 0)}</p>
+          <h3>Credit limit</h3>
+          <p>{formatUsd(creditLimitCents)}</p>
+        </article>
+        <article className="metric-card">
+          <h3>Spent in LiteLLM</h3>
+          <p>{formatUsd(spentCents)}</p>
         </article>
         <article className="metric-card">
           <h3>Remaining this month</h3>
-          <p>{formatUsd(data?.remainingCents ?? 0)}</p>
+          <p>{formatUsd(remainingCents)}</p>
         </article>
       </section>
 
