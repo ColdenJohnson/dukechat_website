@@ -1,24 +1,6 @@
 import crypto from 'node:crypto';
 
-import type { PortalSessionUser } from '@/lib/auth';
 import { normalizeEmail } from '@/lib/email';
-
-type LiteLLMUserContext = {
-  email: string;
-  userId: string;
-};
-
-type ChatRequest = {
-  model: unknown;
-  message: unknown;
-  temperature?: number;
-};
-
-type ChatResponse = {
-  model: string;
-  response: string;
-  usage: unknown;
-};
 
 type LiteLLMAdminResponse = {
   status: number;
@@ -53,24 +35,6 @@ class LiteLLMConfigError extends Error {
 
 const REQUEST_TIMEOUT_MS = 30_000;
 
-function resolveLiteLLMProxyConfig() {
-  const baseUrl = process.env.LITELLM_PROXY_URL?.replace(/\/$/, '') ?? null;
-  const apiKey = process.env.LITELLM_API_KEY ?? null;
-
-  if (!baseUrl) {
-    throw new LiteLLMConfigError('Missing LITELLM_PROXY_URL in environment configuration.');
-  }
-
-  if (!apiKey) {
-    throw new LiteLLMConfigError('Missing LITELLM_API_KEY in environment configuration.');
-  }
-
-  return {
-    baseUrl,
-    apiKey
-  };
-}
-
 function resolveLiteLLMAdminConfig() {
   const adminUrl = process.env.LITELLM_ADMIN_URL?.replace(/\/$/, '') ?? null;
   const masterKey = process.env.LITELLM_MASTER_KEY ?? null;
@@ -86,23 +50,6 @@ function resolveLiteLLMAdminConfig() {
   return {
     adminUrl,
     masterKey
-  };
-}
-
-function resolveUserContext(user: PortalSessionUser): LiteLLMUserContext {
-  return {
-    email: normalizeEmail(user.email),
-    userId: user.descopeSub ?? user.email
-  };
-}
-
-function litellmHeaders(user: LiteLLMUserContext, apiKey: string): HeadersInit {
-  return {
-    Authorization: `Bearer ${apiKey}`,
-    'Content-Type': 'application/json',
-    'X-OpenWebUI-User-Email': user.email,
-    'X-OpenWebUI-User-Id': user.userId,
-    'X-Portal-User-Email': user.email
   };
 }
 
@@ -164,75 +111,6 @@ function normalizeUsd(value: number): number {
   return Number(value.toFixed(2));
 }
 
-function assertModelName(model: unknown): string {
-  if (typeof model !== 'string' || model.trim().length === 0) {
-    throw new Error('Model is required.');
-  }
-
-  return model.trim();
-}
-
-function assertMessage(message: unknown): string {
-  if (typeof message !== 'string') {
-    throw new Error('Message must be a string.');
-  }
-
-  const normalized = message.trim();
-
-  if (normalized.length < 1) {
-    throw new Error('Message cannot be empty.');
-  }
-
-  if (normalized.length > 10_000) {
-    throw new Error('Message exceeds 10000 character limit.');
-  }
-
-  return normalized;
-}
-
-function extractAssistantText(payload: unknown): string {
-  if (!payload || typeof payload !== 'object') {
-    return '';
-  }
-
-  const record = payload as Record<string, unknown>;
-  const choices = record.choices;
-
-  if (!Array.isArray(choices) || choices.length === 0) {
-    return '';
-  }
-
-  const firstChoice = choices[0] as Record<string, unknown>;
-  const message = firstChoice.message;
-
-  if (!message || typeof message !== 'object') {
-    return '';
-  }
-
-  const content = (message as Record<string, unknown>).content;
-
-  if (typeof content === 'string') {
-    return content;
-  }
-
-  if (!Array.isArray(content)) {
-    return '';
-  }
-
-  const textParts = content
-    .map((part) => {
-      if (!part || typeof part !== 'object') {
-        return '';
-      }
-
-      const value = (part as Record<string, unknown>).text;
-      return typeof value === 'string' ? value : '';
-    })
-    .filter((entry) => entry.length > 0);
-
-  return textParts.join('\n');
-}
-
 export function budgetIdForEmail(emailRaw: string): string {
   const email = normalizeEmail(emailRaw);
   const hash24 = crypto.createHash('sha256').update(email).digest('hex').slice(0, 24);
@@ -256,78 +134,6 @@ async function litellmAdminCall(path: string, init: RequestInit = {}): Promise<L
   return {
     status: response.status,
     body: await parseJsonSafely(response)
-  };
-}
-
-export async function listLiteLLMModels(user: PortalSessionUser): Promise<string[]> {
-  const { baseUrl, apiKey } = resolveLiteLLMProxyConfig();
-  const userContext = resolveUserContext(user);
-
-  const response = await fetchWithTimeout(`${baseUrl}/v1/models`, {
-    method: 'GET',
-    headers: litellmHeaders(userContext, apiKey)
-  });
-
-  const payload = await parseJsonSafely(response);
-
-  if (!response.ok) {
-    throw new Error(`LiteLLM models request failed (${response.status}). ${JSON.stringify(payload)}`);
-  }
-
-  const data = payload && typeof payload === 'object' ? (payload as Record<string, unknown>).data : null;
-
-  if (!Array.isArray(data)) {
-    return [];
-  }
-
-  return data
-    .map((item) => {
-      if (!item || typeof item !== 'object') {
-        return null;
-      }
-
-      const id = (item as Record<string, unknown>).id;
-      return typeof id === 'string' ? id : null;
-    })
-    .filter((modelId): modelId is string => Boolean(modelId));
-}
-
-export async function sendLiteLLMChat(user: PortalSessionUser, input: ChatRequest): Promise<ChatResponse> {
-  const { baseUrl, apiKey } = resolveLiteLLMProxyConfig();
-  const userContext = resolveUserContext(user);
-  const model = assertModelName(input.model);
-  const message = assertMessage(input.message);
-
-  const response = await fetchWithTimeout(`${baseUrl}/v1/chat/completions`, {
-    method: 'POST',
-    headers: litellmHeaders(userContext, apiKey),
-    body: JSON.stringify({
-      model,
-      messages: [{ role: 'user', content: message }],
-      temperature: input.temperature ?? 0.2,
-      stream: false,
-      user: user.email
-    })
-  });
-
-  const payload = await parseJsonSafely(response);
-
-  if (!response.ok) {
-    throw new Error(`LiteLLM chat request failed (${response.status}). ${JSON.stringify(payload)}`);
-  }
-
-  const text = extractAssistantText(payload);
-
-  if (!text) {
-    throw new Error('LiteLLM response did not include assistant text content.');
-  }
-
-  const usage = payload && typeof payload === 'object' ? (payload as Record<string, unknown>).usage : null;
-
-  return {
-    model,
-    response: text,
-    usage
   };
 }
 

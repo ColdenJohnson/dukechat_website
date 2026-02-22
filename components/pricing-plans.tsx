@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
+import { OPENWEBUI_URL } from '@/lib/openwebui';
 import type { CreditPlan } from '@/lib/plans';
 
 type PricingPlansProps = {
@@ -102,7 +103,7 @@ export function PricingPlans({ plans, isAuthenticated, compact = false }: Pricin
             <>
               <Link href="/subscription">View subscription</Link>
               {' or '}
-              <Link href="/workspace">open workspace</Link>.
+              <a href={OPENWEBUI_URL}>open DukeChat</a>.
             </>
           ) : null}
         </div>

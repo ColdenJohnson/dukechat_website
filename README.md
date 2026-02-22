@@ -1,21 +1,21 @@
 # DukeChat Portal
 
-Production-oriented Next.js portal for:
+Simplified Next.js portal for:
 
-- Landing + SaaS-style funnel
-- Descope auth (login/signup)
+- Landing + auth funnel
 - Tiered credit purchases (`$10`, `$50`, `$100`)
-- Neon/Postgres persistence with Prisma
-- Authenticated LiteLLM AI routing from a protected workspace
+- Neon/Postgres credit ledger with Prisma
+- LiteLLM admin budget sync (`/budget/*`, `/customer/*`)
+- Redirect handoff to OpenWebUI (DukeChat)
 
 ## Implemented product flow
 
-1. User lands on `/` and sees marketing + tier cards.
+1. User lands on `/`.
 2. User logs in/signs up via Descope.
-3. User buys one of three fixed tiers from landing or `/subscription`.
+3. User buys a fixed tier from landing or `/subscription`.
 4. Purchase is written to Postgres (`portal_users` + `credit_transactions`).
-5. Portal syncs the user’s cumulative credit limit to LiteLLM admin APIs (`/budget/*` + `/customer/*`).
-6. User opens `/workspace` and sends prompts routed through LiteLLM with identity headers.
+5. Portal syncs cumulative budget to LiteLLM admin APIs.
+6. User continues to DukeChat via `NEXT_PUBLIC_OPENWEBUI_URL`.
 
 ## Core routes
 
@@ -30,7 +30,6 @@ Protected pages:
 - `/dashboard`
 - `/subscription`
 - `/account`
-- `/workspace`
 
 API endpoints:
 
@@ -39,9 +38,7 @@ API endpoints:
 - `GET /api/dashboard` (protected)
 - `GET /api/subscription` (protected)
 - `POST /api/credits/buy` (protected, accepts `planId` only)
-- `POST /api/budget/sync` (protected, re-sync cumulative portal budget to LiteLLM)
-- `GET /api/ai/models` (protected)
-- `POST /api/ai/chat` (protected)
+- `POST /api/budget/sync` (protected, manual budget/customer resync)
 
 ## Tech stack
 
@@ -49,7 +46,7 @@ API endpoints:
 - Descope Next.js SDK
 - Prisma ORM
 - Neon Postgres
-- LiteLLM Proxy (model routing)
+- LiteLLM Admin API
 
 ## Environment variables
 
@@ -65,8 +62,6 @@ Required:
 - `NEXT_PUBLIC_DESCOPE_PROJECT_ID`
 - `POSTGRES_PRISMA_URL`
 - `POSTGRES_URL_NON_POOLING`
-- `LITELLM_PROXY_URL`
-- `LITELLM_API_KEY`
 - `LITELLM_ADMIN_URL`
 - `LITELLM_MASTER_KEY`
 
@@ -89,25 +84,11 @@ Then test:
 - `http://localhost:3001`
 - `http://localhost:3001/login`
 - `http://localhost:3001/subscription`
-- `http://localhost:3001/workspace`
-
-## Database schema highlights
-
-- `portal_users`
-  - `email` (primary key)
-  - `descope_sub`
-  - `current_plan`
-  - `available_credits_cents`
-  - `lifetime_credits_cents`
-  - `monthly_budget_cents`
-  - `monthly_spent_cents`
-- `credit_transactions`
-  - typed transaction history including `plan_tier` and `credits_added_cents`
+- `http://localhost:3001/dashboard`
 
 ## Notes
 
 - Email identity is normalized as `trim().toLowerCase()` before DB/LiteLLM operations.
-- Credits are top-up style and cumulative in portal DB (`monthly_budget_cents` currently represents total purchased limit).
-- LiteLLM remains source of truth for spend (`/customer/info`), while portal DB is source of truth for purchased credit limit.
-- Payment processor checkout/webhook integration is intentionally not added in this pass.
-- Rotate credentials if secrets have ever been pasted to logs/chat.
+- Portal DB is source of truth for purchased cumulative credits.
+- LiteLLM is source of truth for spend (`/customer/info`).
+- Unknown users remain blocked by default in LiteLLM until budget sync unblocks them.

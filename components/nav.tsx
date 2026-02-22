@@ -2,6 +2,7 @@ import Link from 'next/link';
 
 import { LogoutButton } from '@/components/logout-button';
 import { getCurrentUser } from '@/lib/auth';
+import { OPENWEBUI_URL } from '@/lib/openwebui';
 
 type SiteNavProps = {
   marketing?: boolean;
@@ -27,7 +28,7 @@ export async function SiteNav({ marketing = false }: SiteNavProps) {
         ) : null}
         {user ? (
           <>
-            <Link href="/workspace">Workspace</Link>
+            <a href={OPENWEBUI_URL}>DukeChat</a>
             <Link href="/dashboard">Dashboard</Link>
             <Link href="/subscription">Subscription</Link>
             <Link href="/account">Account</Link>
@@ -38,9 +39,9 @@ export async function SiteNav({ marketing = false }: SiteNavProps) {
       <div className="site-nav-actions">
         {user ? (
           <>
-            <Link href="/workspace" className="button button-primary">
-              Open Workspace
-            </Link>
+            <a href={OPENWEBUI_URL} className="button button-primary">
+              Open DukeChat
+            </a>
             <LogoutButton />
           </>
         ) : (

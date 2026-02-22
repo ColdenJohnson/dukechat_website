@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { SiteNav } from '@/components/nav';
 import { requireCurrentUser } from '@/lib/auth';
 import { getUserUsage } from '@/lib/litellm';
+import { OPENWEBUI_URL } from '@/lib/openwebui';
 import { formatUsd, getDashboardData, planTierToLabel, upsertPortalUser } from '@/lib/portal-service';
 
 export default async function DashboardPage() {
@@ -24,10 +25,7 @@ export default async function DashboardPage() {
       <section className="page-head">
         <p className="eyebrow">Dashboard</p>
         <h1>Account and usage overview</h1>
-        <p>
-          This workspace is protected by Descope auth. Purchases and AI usage controls are anchored to your email
-          identity.
-        </p>
+        <p>This dashboard is protected by Descope auth. Purchases and usage controls are anchored to your email.</p>
       </section>
 
       <section className="metric-grid">
@@ -97,9 +95,9 @@ export default async function DashboardPage() {
           <Link href="/subscription" className="button button-primary">
             Buy credits
           </Link>
-          <Link href="/workspace" className="button button-ghost">
-            Open AI workspace
-          </Link>
+          <a href={OPENWEBUI_URL} className="button button-ghost">
+            Open DukeChat
+          </a>
         </div>
       </section>
     </main>

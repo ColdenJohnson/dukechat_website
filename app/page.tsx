@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { SiteNav } from '@/components/nav';
 import { PricingPlans } from '@/components/pricing-plans';
 import { getCurrentUser } from '@/lib/auth';
+import { OPENWEBUI_URL } from '@/lib/openwebui';
 import { CREDIT_PLANS } from '@/lib/plans';
 
 export default async function LandingPage() {
@@ -13,19 +14,16 @@ export default async function LandingPage() {
       <SiteNav marketing />
 
       <section className="hero">
-        <p className="eyebrow">LLM access + spend controls in one stack</p>
-        <h1>Production-grade AI portal with identity, credits, and model routing built in.</h1>
-        <p>
-          DukeChat gives you an authenticated SaaS landing flow, fixed credit tiers, and user-attributed AI requests
-          routed through LiteLLM for enforcement.
-        </p>
+        <p className="eyebrow">Simple access + spend controls</p>
+        <h1>Duke Chat</h1>
+        <p>Models for every need, with straightforward sign-in, credit top-ups, and spend visibility.</p>
 
         <div className="hero-actions">
           {user ? (
             <>
-              <Link href="/workspace" className="button button-primary">
-                Open Workspace
-              </Link>
+              <a href={OPENWEBUI_URL} className="button button-primary">
+                Open DukeChat
+              </a>
               <Link href="/subscription" className="button button-ghost">
                 Manage Subscription
               </Link>
@@ -50,23 +48,23 @@ export default async function LandingPage() {
         <div className="hero-stats">
           <article>
             <strong>Descope</strong>
-            <p>Single sign-on identity across portal and usage controls.</p>
+            <p>Single sign-on identity with email-first account mapping.</p>
           </article>
           <article>
             <strong>Neon Postgres</strong>
-            <p>Persistent ledger for users, plans, and credits.</p>
+            <p>Persistent ledger for plans, purchases, and balances.</p>
           </article>
           <article>
-            <strong>LiteLLM Proxy</strong>
-            <p>Unified AI model routing with per-user attribution headers.</p>
+            <strong>LiteLLM Budgets</strong>
+            <p>Real budget sync and spend tracking for each user.</p>
           </article>
         </div>
       </section>
 
       <section id="features" className="feature-grid">
         <article className="feature-card">
-          <h3>Identity-first gating</h3>
-          <p>Critical routes are auth-gated, and every API request maps to the signed-in user email.</p>
+          <h3>Identity-first access</h3>
+          <p>Critical routes are auth-gated, and every account is anchored to normalized email.</p>
         </article>
         <article className="feature-card">
           <h3>Fixed plan purchases</h3>
@@ -77,8 +75,8 @@ export default async function LandingPage() {
           <p>Each purchase writes a typed transaction row so balances and budget updates can be traced.</p>
         </article>
         <article className="feature-card">
-          <h3>AI traffic routed centrally</h3>
-          <p>Workspace prompts route via server-side LiteLLM API calls with user identity headers attached.</p>
+          <h3>OpenWebUI handoff</h3>
+          <p>Use this portal for identity and billing controls, then continue directly into DukeChat.</p>
         </article>
       </section>
 
@@ -107,23 +105,20 @@ export default async function LandingPage() {
             <p>Credits and purchase transactions are stored in Neon Postgres and surfaced in your subscription page.</p>
           </article>
           <article>
-            <h3>How are AI requests attributed?</h3>
-            <p>
-              The workspace proxy sends your identity headers with each LiteLLM request so usage can be enforced per
-              user.
-            </p>
+            <h3>How is usage enforced?</h3>
+            <p>Purchased credit limits are synced to LiteLLM budgets, and spend is read back from LiteLLM.</p>
           </article>
         </div>
       </section>
 
       <section className="final-cta">
-        <h2>Ready to run production traffic through a controlled AI gateway?</h2>
-        <p>Sign up, pick a tier, and route prompts through your authenticated workspace.</p>
+        <h2>Ready to top up and continue to DukeChat?</h2>
+        <p>Sign up, pick a tier, and open the chat app.</p>
         <div className="hero-actions">
           {user ? (
-            <Link href="http://67.159.73.73:3000/" className="button button-primary"> 
-              Continue to Workspace
-            </Link>
+            <a href={OPENWEBUI_URL} className="button button-primary">
+              Continue to DukeChat
+            </a>
           ) : (
             <Link href="/signup" className="button button-primary">
               Create Account
@@ -134,4 +129,3 @@ export default async function LandingPage() {
     </main>
   );
 }
-// http://67.159.73.73:3000/oauth/oidc/login

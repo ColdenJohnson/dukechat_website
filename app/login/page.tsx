@@ -18,10 +18,8 @@ export default async function LoginPage() {
       <section className="auth-shell">
         <div>
           <p className="eyebrow">Welcome back</p>
-          <h1>Log in to manage credits and run AI requests.</h1>
-          <p>
-            Sign in with Descope to access your protected subscription data, dashboard metrics, and AI workspace.
-          </p>
+          <h1>Log in to manage credits and usage.</h1>
+          <p>Sign in with Descope to access your protected subscription data, dashboard metrics, and account details.</p>
           <p>
             Need an account? <Link href="/signup">Create one here</Link>.
           </p>
